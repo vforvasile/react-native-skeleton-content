@@ -1,11 +1,12 @@
+/* eslint-disable react/function-component-definition */
 import * as React from 'react';
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { interpolateNode } from 'react-native-reanimated';
+import Animated, { interpolate, useSharedValue } from 'react-native-reanimated';
 import {
   interpolateColor,
   loop,
-  useValue,
+  // useValue,
 } from 'react-native-redash/lib/module/v1';
 import {
   ICustomViewStyle,
@@ -21,7 +22,7 @@ import {
   IDirection,
 } from './Constants';
 
-const { useCode, set, cond, eq } = Animated;
+// const { useCode, set, cond, eq } = Animated;
 const { useState, useCallback } = React;
 
 const styles = StyleSheet.create({
@@ -63,40 +64,59 @@ const SkeletonContent: React.FunctionComponent<ISkeletonContentProps> = ({
   highlightColor = DEFAULT_HIGHLIGHT_COLOR,
   children,
 }) => {
-  const animationValue = useValue(0);
-  const loadingValue = useValue(isLoading ? 1 : 0);
-  const shiverValue = useValue(animationType === 'shiver' ? 1 : 0);
+  const animationValue = useSharedValue(0); // useValue(0);
+  const loadingValue = useSharedValue(isLoading ? 1 : 0); // useValue(isLoading ? 1 : 0);
+  const shiverValue = useSharedValue(animationType === 'shiver' ? 1 : 0); // useValue(animationType === 'shiver' ? 1 : 0);
 
   const [componentSize, onLayout] = useLayout();
 
-  useCode(
-    () =>
-      cond(eq(loadingValue, 1), [
-        cond(
-          eq(shiverValue, 1),
-          [
-            set(
-              animationValue,
-              loop({
-                duration,
-                easing,
-              })
-            ),
-          ],
-          [
-            set(
-              animationValue,
-              loop({
-                duration: duration! / 2,
-                easing,
-                boomerang: true,
-              })
-            ),
-          ]
-        ),
-      ]),
-    [loadingValue, shiverValue, animationValue]
-  );
+  React.useEffect(() => {
+    if (loadingValue.value !== 1) {
+      animationValue.value = loop({
+        duration,
+        easing,
+      });
+
+      return;
+    }
+
+    if (shiverValue.value === 1) {
+      animationValue.value = loop({
+        duration: duration! / 2,
+        easing,
+        boomerang: true,
+      });
+    }
+  }, [loadingValue, shiverValue, animationValue, duration, easing]);
+
+  // useCode(
+  //   () =>
+  //     cond(eq(loadingValue, 1), [
+  //       cond(
+  //         eq(shiverValue, 1),
+  //         [
+  //           set(
+  //             animationValue,
+  //             loop({
+  //               duration,
+  //               easing,
+  //             })
+  //           ),
+  //         ],
+  //         [
+  //           set(
+  //             animationValue,
+  //             loop({
+  //               duration: duration! / 2,
+  //               easing,
+  //               boomerang: true,
+  //             })
+  //           ),
+  //         ]
+  //       ),
+  //     ]),
+  //   [loadingValue, shiverValue, animationValue]
+  // );
 
   const getBoneWidth = (boneLayout: ICustomViewStyle): number =>
     (typeof boneLayout.width === 'string'
@@ -226,10 +246,11 @@ const SkeletonContent: React.FunctionComponent<ISkeletonContentProps> = ({
       animationDirection === 'horizontalLeft' ||
       animationDirection === 'horizontalRight'
     ) {
-      const interpolatedPosition = interpolateNode(animationValue, {
-        inputRange: [0, 1],
-        outputRange: getPositionRange(boneLayout),
-      });
+      const interpolatedPosition = interpolate(
+        animationValue.value,
+        [0, 1],
+        getPositionRange(boneLayout)
+      );
       if (
         animationDirection === 'verticalTop' ||
         animationDirection === 'verticalDown'
@@ -294,14 +315,8 @@ const SkeletonContent: React.FunctionComponent<ISkeletonContentProps> = ({
           yOutputRange.reverse();
         }
       }
-      let translateX = interpolateNode(animationValue, {
-        inputRange: [0, 1],
-        outputRange: xOutputRange,
-      });
-      let translateY = interpolateNode(animationValue, {
-        inputRange: [0, 1],
-        outputRange: yOutputRange,
-      });
+      let translateX = interpolate(animationValue.value, [0, 1], xOutputRange);
+      let translateY = interpolate(animationValue.value, [0, 1], yOutputRange);
       // swapping the translates if width is the main dim
       if (mainDimension === boneWidth)
         [translateX, translateY] = [translateY, translateX];
