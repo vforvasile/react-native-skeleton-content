@@ -2,19 +2,20 @@
 import * as React from 'react';
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { interpolate, useSharedValue } from 'react-native-reanimated';
-import {
+import Animated, {
   interpolateColor,
-  loop,
-  // useValue,
-} from 'react-native-redash/lib/module/v1';
+  interpolate,
+  useDerivedValue,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import {
   ICustomViewStyle,
   DEFAULT_ANIMATION_DIRECTION,
   DEFAULT_ANIMATION_TYPE,
   DEFAULT_BONE_COLOR,
   DEFAULT_BORDER_RADIUS,
-  DEFAULT_EASING,
   DEFAULT_DURATION,
   DEFAULT_HIGHLIGHT_COLOR,
   DEFAULT_LOADING,
@@ -54,7 +55,6 @@ const useLayout = () => {
 
 const SkeletonContent: React.FunctionComponent<ISkeletonContentProps> = ({
   containerStyle = styles.container,
-  easing = DEFAULT_EASING,
   duration = DEFAULT_DURATION,
   layout = [],
   animationType = DEFAULT_ANIMATION_TYPE,
@@ -64,59 +64,25 @@ const SkeletonContent: React.FunctionComponent<ISkeletonContentProps> = ({
   highlightColor = DEFAULT_HIGHLIGHT_COLOR,
   children,
 }) => {
-  const animationValue = useSharedValue(0); // useValue(0);
-  const loadingValue = useSharedValue(isLoading ? 1 : 0); // useValue(isLoading ? 1 : 0);
-  const shiverValue = useSharedValue(animationType === 'shiver' ? 1 : 0); // useValue(animationType === 'shiver' ? 1 : 0);
+  let animationValue = useSharedValue(0);
 
   const [componentSize, onLayout] = useLayout();
 
-  React.useEffect(() => {
-    if (loadingValue.value !== 1) {
-      animationValue.value = loop({
-        duration,
-        easing,
-      });
+  const backgroundPulseColor = useDerivedValue(() =>
+    interpolateColor(
+      animationValue.value,
+      [0, 1],
+      [boneColor!, highlightColor!]
+    )
+  );
 
-      return;
+  animationValue = useDerivedValue(() => {
+    if (isLoading) return 0;
+    if (animationType === 'shiver') {
+      return withRepeat(withTiming(duration!), -1);
     }
-
-    if (shiverValue.value === 1) {
-      animationValue.value = loop({
-        duration: duration! / 2,
-        easing,
-        boomerang: true,
-      });
-    }
-  }, [loadingValue, shiverValue, animationValue, duration, easing]);
-
-  // useCode(
-  //   () =>
-  //     cond(eq(loadingValue, 1), [
-  //       cond(
-  //         eq(shiverValue, 1),
-  //         [
-  //           set(
-  //             animationValue,
-  //             loop({
-  //               duration,
-  //               easing,
-  //             })
-  //           ),
-  //         ],
-  //         [
-  //           set(
-  //             animationValue,
-  //             loop({
-  //               duration: duration! / 2,
-  //               easing,
-  //               boomerang: true,
-  //             })
-  //           ),
-  //         ]
-  //       ),
-  //     ]),
-  //   [loadingValue, shiverValue, animationValue]
-  // );
+    return withRepeat(withTiming(duration! / 2), -1);
+  }, [isLoading, animationType, duration]);
 
   const getBoneWidth = (boneLayout: ICustomViewStyle): number =>
     (typeof boneLayout.width === 'string'
@@ -208,10 +174,7 @@ const SkeletonContent: React.FunctionComponent<ISkeletonContentProps> = ({
     const pulseStyles = [
       getBoneStyles(boneLayout),
       {
-        backgroundColor: interpolateColor(animationValue, {
-          inputRange: [0, 1],
-          outputRange: [boneColor!, highlightColor!],
-        }),
+        backgroundColor: backgroundPulseColor,
       },
     ];
     if (animationType === 'none') pulseStyles.pop();
