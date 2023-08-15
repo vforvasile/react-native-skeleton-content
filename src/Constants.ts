@@ -1,5 +1,5 @@
 import { StyleProp, ViewStyle } from 'react-native';
-import { EasingFn } from 'react-native-reanimated';
+import { EasingFunction } from 'react-native-reanimated';
 
 type _animationType = 'none' | 'shiver' | 'pulse' | undefined;
 type _animationDirection =
@@ -27,7 +27,7 @@ export interface ISkeletonContentProps {
   animationDirection?: _animationDirection;
   boneColor?: string;
   highlightColor?: string;
-  easing?: EasingFn;
+  easing?: EasingFunction;
   children?: any;
 }
 
