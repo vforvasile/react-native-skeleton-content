@@ -1,7 +1,8 @@
 /* eslint-disable react/function-component-definition */
 import * as React from 'react';
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import LinearGradient from 'react-native-linear-gradient';
+
 import Animated, {
   interpolateColor,
   interpolate,

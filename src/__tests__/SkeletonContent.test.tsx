@@ -2,7 +2,7 @@ import { View, Text } from 'react-native';
 import React from 'react';
 import Animated from 'react-native-reanimated';
 
-import { LinearGradient } from 'expo-linear-gradient';
+import LinearGradient from 'react-native-linear-gradient';
 import { create } from 'react-test-renderer';
 import SkeletonContent from '../SkeletonContent';
 import {
